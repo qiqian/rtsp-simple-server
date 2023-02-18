@@ -1,8 +1,6 @@
 package mpegts
 
 import (
-	"bytes"
-	"context"
 	"fmt"
 
 	"github.com/aler9/gortsplib/v2/pkg/codecs/mpeg4audio"
@@ -43,9 +41,8 @@ type Track struct {
 }
 
 // FindTracks finds the tracks in a MPEG-TS stream.
-func FindTracks(byts []byte) ([]*Track, error) {
+func FindTracks(dem *astits.Demuxer) ([]*Track, error) {
 	var tracks []*Track
-	dem := astits.NewDemuxer(context.Background(), bytes.NewReader(byts))
 
 	for {
 		data, err := dem.NextData()
@@ -55,9 +52,30 @@ func FindTracks(byts []byte) ([]*Track, error) {
 
 		if data.PMT != nil {
 			for _, es := range data.PMT.ElementaryStreams {
+				track := &Track{
+					ES: es,
+				}
+
 				switch es.StreamType {
-				case astits.StreamTypeH264Video,
-					astits.StreamTypeAACAudio:
+				case astits.StreamTypeH264Video:
+					track.Format = &format.H264{
+						PayloadTyp:        96,
+						PacketizationMode: 1,
+					}
+
+				case astits.StreamTypeAACAudio:
+					conf, err := findMPEG4AudioConfig(dem, es.ElementaryPID)
+					if err != nil {
+						return nil, err
+					}
+
+					track.Format = &format.MPEG4Audio{
+						PayloadTyp:       96,
+						Config:           conf,
+						SizeLength:       13,
+						IndexLength:      3,
+						IndexDeltaLength: 3,
+					}
 
 				case astits.StreamTypeMetadata:
 					continue
@@ -66,9 +84,7 @@ func FindTracks(byts []byte) ([]*Track, error) {
 					return nil, fmt.Errorf("track type %d not supported (yet)", es.StreamType)
 				}
 
-				tracks = append(tracks, &Track{
-					ES: es,
-				})
+				tracks = append(tracks, track)
 			}
 			break
 		}
@@ -76,30 +92,6 @@ func FindTracks(byts []byte) ([]*Track, error) {
 
 	if tracks == nil {
 		return nil, fmt.Errorf("no tracks found")
-	}
-
-	for _, t := range tracks {
-		switch t.ES.StreamType {
-		case astits.StreamTypeH264Video:
-			t.Format = &format.H264{
-				PayloadTyp:        96,
-				PacketizationMode: 1,
-			}
-
-		case astits.StreamTypeAACAudio:
-			conf, err := findMPEG4AudioConfig(dem, t.ES.ElementaryPID)
-			if err != nil {
-				return nil, err
-			}
-
-			t.Format = &format.MPEG4Audio{
-				PayloadTyp:       96,
-				Config:           conf,
-				SizeLength:       13,
-				IndexLength:      3,
-				IndexDeltaLength: 3,
-			}
-		}
 	}
 
 	return tracks, nil

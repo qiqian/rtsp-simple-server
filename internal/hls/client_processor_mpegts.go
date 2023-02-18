@@ -12,8 +12,8 @@ import (
 	"github.com/aler9/gortsplib/v2/pkg/format"
 	"github.com/asticode/go-astits"
 
-	"github.com/aler9/rtsp-simple-server/internal/hls/mpegts"
 	"github.com/aler9/rtsp-simple-server/internal/logger"
+	"github.com/aler9/rtsp-simple-server/internal/mpegts"
 )
 
 func mpegtsPickLeadingTrack(mpegtsTracks []*mpegts.Track) uint16 {
@@ -81,8 +81,10 @@ func (p *clientProcessorMPEGTS) run(ctx context.Context) error {
 
 func (p *clientProcessorMPEGTS) processSegment(ctx context.Context, byts []byte) error {
 	if p.mpegtsTracks == nil {
+		dem := astits.NewDemuxer(context.Background(), bytes.NewReader(byts))
+
 		var err error
-		p.mpegtsTracks, err = mpegts.FindTracks(byts)
+		p.mpegtsTracks, err = mpegts.FindTracks(dem)
 		if err != nil {
 			return err
 		}

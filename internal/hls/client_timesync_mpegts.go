@@ -6,19 +6,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aler9/rtsp-simple-server/internal/hls/mpegtstimedec"
+	"github.com/aler9/rtsp-simple-server/internal/mpegts"
 )
 
 type clientTimeSyncMPEGTS struct {
 	startRTC time.Time
-	td       *mpegtstimedec.Decoder
+	td       *mpegts.TimeDecoder
 	mutex    sync.Mutex
 }
 
 func newClientTimeSyncMPEGTS(startDTS int64) *clientTimeSyncMPEGTS {
 	return &clientTimeSyncMPEGTS{
 		startRTC: time.Now(),
-		td:       mpegtstimedec.New(startDTS),
+		td:       mpegts.NewTimeDecoder(startDTS),
 	}
 }
 

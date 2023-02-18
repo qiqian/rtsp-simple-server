@@ -1,4 +1,4 @@
-package mpegtstimedec
+package mpegts
 
 import (
 	"testing"
@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNegativeDiff(t *testing.T) {
-	d := New(64523434)
+func TestTimeDecoderNegativeDiff(t *testing.T) {
+	d := NewTimeDecoder(64523434)
 
 	ts := d.Decode(64523434 - 90000)
 	require.Equal(t, -1*time.Second, ts)
@@ -23,8 +23,8 @@ func TestNegativeDiff(t *testing.T) {
 	require.Equal(t, 1*time.Second, ts)
 }
 
-func TestOverflow(t *testing.T) {
-	d := New(0x1FFFFFFFF - 20)
+func TestTimeDecoderOverflow(t *testing.T) {
+	d := NewTimeDecoder(0x1FFFFFFFF - 20)
 
 	i := int64(0x1FFFFFFFF - 20)
 	secs := time.Duration(0)
@@ -49,8 +49,8 @@ func TestOverflow(t *testing.T) {
 	}
 }
 
-func TestOverflowAndBack(t *testing.T) {
-	d := New(0x1FFFFFFFF - 90000 + 1)
+func TestTimeDecoderOverflowAndBack(t *testing.T) {
+	d := NewTimeDecoder(0x1FFFFFFFF - 90000 + 1)
 
 	ts := d.Decode(0x1FFFFFFFF - 90000 + 1)
 	require.Equal(t, time.Duration(0), ts)

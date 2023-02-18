@@ -7,7 +7,7 @@ import (
 	"github.com/aler9/gortsplib/v2/pkg/codecs/h264"
 	"github.com/aler9/gortsplib/v2/pkg/format"
 
-	"github.com/aler9/rtsp-simple-server/internal/hls/mpegts"
+	"github.com/aler9/rtsp-simple-server/internal/mpegts"
 )
 
 const (
