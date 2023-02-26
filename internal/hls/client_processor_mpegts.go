@@ -89,6 +89,14 @@ func (p *clientProcessorMPEGTS) processSegment(ctx context.Context, byts []byte)
 			return err
 		}
 
+		for _, track := range p.mpegtsTracks {
+			switch track.Format.(type) {
+			case *format.H264, *format.MPEG4Audio:
+			default:
+				return fmt.Errorf("unsupported track type: %T", track)
+			}
+		}
+
 		p.leadingTrackPID = mpegtsPickLeadingTrack(p.mpegtsTracks)
 
 		tracks := make([]format.Format, len(p.mpegtsTracks))

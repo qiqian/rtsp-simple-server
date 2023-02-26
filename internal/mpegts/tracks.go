@@ -8,6 +8,10 @@ import (
 	"github.com/asticode/go-astits"
 )
 
+const (
+	opusIdentifier = uint32('O')<<24 | uint32('p')<<16 | uint32('u')<<8 | uint32('s')
+)
+
 func findMPEG4AudioConfig(dem *astits.Demuxer, pid uint16) (*mpeg4audio.Config, error) {
 	for {
 		data, err := dem.NextData()
@@ -52,16 +56,23 @@ func FindTracks(dem *astits.Demuxer) ([]*Track, error) {
 
 		if data.PMT != nil {
 			for _, es := range data.PMT.ElementaryStreams {
-				track := &Track{
-					ES: es,
-				}
-
 				switch es.StreamType {
 				case astits.StreamTypeH264Video:
-					track.Format = &format.H264{
-						PayloadTyp:        96,
-						PacketizationMode: 1,
-					}
+					tracks = append(tracks, &Track{
+						ES: es,
+						Format: &format.H264{
+							PayloadTyp:        96,
+							PacketizationMode: 1,
+						},
+					})
+
+				case astits.StreamTypeH265Video:
+					tracks = append(tracks, &Track{
+						ES: es,
+						Format: &format.H265{
+							PayloadTyp: 96,
+						},
+					})
 
 				case astits.StreamTypeAACAudio:
 					conf, err := findMPEG4AudioConfig(dem, es.ElementaryPID)
@@ -69,22 +80,31 @@ func FindTracks(dem *astits.Demuxer) ([]*Track, error) {
 						return nil, err
 					}
 
-					track.Format = &format.MPEG4Audio{
-						PayloadTyp:       96,
-						Config:           conf,
-						SizeLength:       13,
-						IndexLength:      3,
-						IndexDeltaLength: 3,
+					tracks = append(tracks, &Track{
+						ES: es,
+						Format: &format.MPEG4Audio{
+							PayloadTyp:       96,
+							Config:           conf,
+							SizeLength:       13,
+							IndexLength:      3,
+							IndexDeltaLength: 3,
+						},
+					})
+
+				case astits.StreamTypePrivateData:
+					for _, pd := range es.ElementaryStreamDescriptors {
+						if pd.Registration != nil {
+							if pd.Registration.FormatIdentifier == opusIdentifier {
+								tracks = append(tracks, &Track{
+									ES: es,
+									Format: &format.Opus{
+										ChannelCount: 2, // TODO: extract from 0x80
+									},
+								})
+							}
+						}
 					}
-
-				case astits.StreamTypeMetadata:
-					continue
-
-				default:
-					return nil, fmt.Errorf("track type %d not supported (yet)", es.StreamType)
 				}
-
-				tracks = append(tracks, track)
 			}
 			break
 		}

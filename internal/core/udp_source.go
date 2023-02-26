@@ -162,6 +162,26 @@ func (s *udpSource) run(ctx context.Context, cnf *conf.PathConf, reloadConf chan
 						}
 					}
 
+				case *format.H265:
+					medi.Type = media.TypeVideo
+
+					mediaCallbacks[track.ES.ElementaryPID] = func(pts time.Duration, data []byte) {
+						au, err := h264.AnnexBUnmarshal(data)
+						if err != nil {
+							s.Log(logger.Warn, "%v", err)
+							return
+						}
+
+						err = stream.writeData(medi, cformat, &formatprocessor.DataH265{
+							PTS: pts,
+							AU:  au,
+							NTP: time.Now(),
+						})
+						if err != nil {
+							s.Log(logger.Warn, "%v", err)
+						}
+					}
+
 				case *format.MPEG4Audio:
 					medi.Type = media.TypeAudio
 
@@ -185,6 +205,36 @@ func (s *udpSource) run(ctx context.Context, cnf *conf.PathConf, reloadConf chan
 						})
 						if err != nil {
 							s.Log(logger.Warn, "%v", err)
+						}
+					}
+
+				case *format.Opus:
+					medi.Type = media.TypeAudio
+
+					mediaCallbacks[track.ES.ElementaryPID] = func(pts time.Duration, data []byte) {
+						pos := 0
+
+						for {
+							var au mpegts.OpusAccessUnit
+							n, err := au.Unmarshal(data[pos:])
+							if err != nil {
+								s.Log(logger.Warn, "%v", err)
+								return
+							}
+							pos += n
+
+							err = stream.writeData(medi, cformat, &formatprocessor.DataOpus{
+								PTS:   pts,
+								Frame: au.Frame,
+								NTP:   time.Now(),
+							})
+							if err != nil {
+								s.Log(logger.Warn, "%v", err)
+							}
+
+							if len(data[pos:]) == 0 {
+								break
+							}
 						}
 					}
 				}

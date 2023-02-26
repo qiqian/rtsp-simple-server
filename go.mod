@@ -23,6 +23,7 @@ require (
 	github.com/pion/webrtc/v3 v3.1.47
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/crypto v0.5.0
+	golang.org/x/net v0.7.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -57,7 +58,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
-	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
