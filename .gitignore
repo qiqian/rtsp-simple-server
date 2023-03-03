@@ -2,3 +2,6 @@
 /binaries
 /coverage*.txt
 /apidocs/*.html
+__debug*
+.vscode
+rtsp-simple-server

@@ -223,7 +223,9 @@ func (c *rtmpConn) runRead(ctx context.Context, u *url.URL) error {
 
 	res := c.pathManager.readerAdd(pathReaderAddReq{
 		author:   c,
+		uuid:     c.uuid,
 		pathName: pathName,
+		query:    query.Encode(),
 		authenticate: func(
 			pathIPs []fmt.Stringer,
 			pathUser conf.Credential,
@@ -422,7 +424,7 @@ func (c *rtmpConn) runRead(ctx context.Context, u *url.URL) error {
 	defer res.stream.readerRemove(c)
 
 	c.log(logger.Info, "is reading from path '%s', %s",
-		path.name, sourceMediaInfo(medias))
+		path.uuid, sourceMediaInfo(medias))
 
 	pathConf := path.safeConf()
 
@@ -532,7 +534,7 @@ func (c *rtmpConn) runPublish(ctx context.Context, u *url.URL) error {
 	}
 
 	c.log(logger.Info, "is publishing to path '%s', %s",
-		path.name,
+		path.uuid,
 		sourceMediaInfo(medias))
 
 	// disable write deadline to allow outgoing acknowledges

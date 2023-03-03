@@ -35,12 +35,12 @@ readBufferCount: 512
 externalAuthenticationURL:
 
 # Enable the HTTP API.
-api: no
+api: yes
 # Address of the API listener.
 apiAddress: 127.0.0.1:9997
 
 # Enable Prometheus-compatible metrics.
-metrics: no
+metrics: yes
 # Address of the metrics listener.
 metricsAddress: 127.0.0.1:9998
 
@@ -222,6 +222,9 @@ webrtcICETCPMuxAddress:
 # The settings under the path "all" are applied to all paths that do not match
 # another entry.
 paths:
+  ~^iptv/:
+    runOnDemand: ffmpeg -hide_banner -loglevel panic -i rtsp://$RTSP_SUBPATH?$RTSP_QUERY -c:v copy -c:a aac -b:a 128k -f rtsp rtsp://localhost:$RTSP_PORT/$RTSP_UUID
+    runOnDemandRestart: yes
   all:
     # Source of the stream. This can be:
     # * publisher -> the stream is published by a RTSP or RTMP client

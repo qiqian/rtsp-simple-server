@@ -270,7 +270,7 @@ func (s *rtspSession) onPlay(ctx *gortsplib.ServerHandlerOnPlayCtx) (*base.Respo
 
 	if s.session.State() == gortsplib.ServerSessionStatePrePlay {
 		s.log(logger.Info, "is reading from path '%s', with %s, %s",
-			s.path.name,
+			s.path.uuid,
 			s.session.SetuppedTransport(),
 			sourceMediaInfo(s.session.SetuppedMedias()))
 
@@ -313,7 +313,7 @@ func (s *rtspSession) onRecord(ctx *gortsplib.ServerHandlerOnRecordCtx) (*base.R
 	}
 
 	s.log(logger.Info, "is publishing to path '%s', with %s, %s",
-		s.path.name,
+		s.path.uuid,
 		s.session.SetuppedTransport(),
 		sourceMediaInfo(s.session.AnnouncedMedias()))
 

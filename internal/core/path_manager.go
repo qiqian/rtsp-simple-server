@@ -107,7 +107,7 @@ func newPathManager(
 
 	for pathConfName, pathConf := range pm.pathConfs {
 		if pathConf.Regexp == nil {
-			pm.createPath(pathConfName, pathConf, pathConfName, nil)
+			pm.createPath(pathConfName, pathConf, pathConfName, "", "", nil)
 		}
 	}
 
@@ -172,7 +172,7 @@ outer:
 			// add new paths
 			for pathConfName, pathConf := range pm.pathConfs {
 				if _, ok := pm.paths[pathConfName]; !ok && pathConf.Regexp == nil {
-					pm.createPath(pathConfName, pathConf, pathConfName, nil)
+					pm.createPath(pathConfName, pathConf, pathConfName, "", "", nil)
 				}
 			}
 
@@ -212,7 +212,7 @@ outer:
 
 			// create path if it doesn't exist
 			if _, ok := pm.paths[req.pathName]; !ok {
-				pm.createPath(pathConfName, pathConf, req.pathName, pathMatches)
+				pm.createPath(pathConfName, pathConf, req.pathName, "", "", pathMatches)
 			}
 
 			req.res <- pathDescribeRes{path: pm.paths[req.pathName]}
@@ -236,11 +236,11 @@ outer:
 			}
 
 			// create path if it doesn't exist
-			if _, ok := pm.paths[req.pathName]; !ok {
-				pm.createPath(pathConfName, pathConf, req.pathName, pathMatches)
+			if _, ok := pm.paths[req.uuid.String()]; !ok {
+				pm.createPath(pathConfName, pathConf, req.pathName, req.uuid.String(), req.query, pathMatches)
 			}
 
-			req.res <- pathReaderSetupPlayRes{path: pm.paths[req.pathName]}
+			req.res <- pathReaderSetupPlayRes{path: pm.paths[req.uuid.String()]}
 
 		case req := <-pm.chPublisherAdd:
 			pathConfName, pathConf, pathMatches, err := pm.findPathConf(req.pathName)
@@ -260,7 +260,7 @@ outer:
 
 			// create path if it doesn't exist
 			if _, ok := pm.paths[req.pathName]; !ok {
-				pm.createPath(pathConfName, pathConf, req.pathName, pathMatches)
+				pm.createPath(pathConfName, pathConf, req.pathName, "", "", pathMatches)
 			}
 
 			req.res <- pathPublisherAnnounceRes{path: pm.paths[req.pathName]}
@@ -295,6 +295,8 @@ func (pm *pathManager) createPath(
 	pathConfName string,
 	pathConf *conf.PathConf,
 	name string,
+	uuid string,
+	query string,
 	matches []string,
 ) {
 	pa := newPath(
@@ -306,12 +308,18 @@ func (pm *pathManager) createPath(
 		pathConfName,
 		pathConf,
 		name,
+		uuid,
+		query,
 		matches,
 		&pm.wg,
 		pm.externalCmdPool,
 		pm)
 
-	pm.paths[name] = pa
+	if uuid != "" {
+		pm.paths[uuid] = pa
+	} else {
+		pm.paths[name] = pa
+	}
 
 	if _, ok := pm.pathsByConf[pathConfName]; !ok {
 		pm.pathsByConf[pathConfName] = make(map[*path]struct{})

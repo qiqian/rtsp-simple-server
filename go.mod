@@ -48,9 +48,9 @@ require (
 	github.com/pion/rtcp v1.2.10 // indirect
 	github.com/pion/sctp v1.8.2 // indirect
 	github.com/pion/sdp/v3 v3.0.6 // indirect
-	github.com/pion/srtp/v2 v2.0.10 // indirect
+	github.com/pion/srtp/v2 v2.0.11 // indirect
 	github.com/pion/stun v0.3.5 // indirect
-	github.com/pion/transport v0.13.1 // indirect
+	github.com/pion/transport v0.14.1 // indirect
 	github.com/pion/transport/v2 v2.0.0 // indirect
 	github.com/pion/turn/v2 v2.0.8 // indirect
 	github.com/pion/udp v0.1.4 // indirect

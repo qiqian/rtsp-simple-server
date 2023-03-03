@@ -13,6 +13,7 @@ import (
 	"github.com/aler9/gortsplib/v2/pkg/base"
 	"github.com/aler9/gortsplib/v2/pkg/media"
 	"github.com/aler9/gortsplib/v2/pkg/url"
+	"github.com/google/uuid"
 
 	"github.com/aler9/rtsp-simple-server/internal/conf"
 	"github.com/aler9/rtsp-simple-server/internal/externalcmd"
@@ -123,7 +124,9 @@ type pathReaderSetupPlayRes struct {
 
 type pathReaderAddReq struct {
 	author       reader
+	uuid         uuid.UUID
 	pathName     string
+	query        string
 	authenticate authenticateFunc
 	res          chan pathReaderSetupPlayRes
 }
@@ -194,6 +197,8 @@ type path struct {
 	confName        string
 	conf            *conf.PathConf
 	name            string
+	uuid            string
+	query           string
 	matches         []string
 	wg              *sync.WaitGroup
 	externalCmdPool *externalcmd.Pool
@@ -243,6 +248,8 @@ func newPath(
 	confName string,
 	cnf *conf.PathConf,
 	name string,
+	uuid string,
+	query string,
 	matches []string,
 	wg *sync.WaitGroup,
 	externalCmdPool *externalcmd.Pool,
@@ -258,6 +265,8 @@ func newPath(
 		confName:                       confName,
 		conf:                           cnf,
 		name:                           name,
+		uuid:                           uuid,
+		query:                          query,
 		matches:                        matches,
 		wg:                             wg,
 		externalCmdPool:                externalCmdPool,
@@ -302,7 +311,11 @@ func (pa *path) wait() {
 
 // Log is the main logging function.
 func (pa *path) log(level logger.Level, format string, args ...interface{}) {
-	pa.parent.log(level, "[path "+pa.name+"] "+format, args...)
+	if pa.uuid != "" {
+		pa.parent.log(level, "[path "+pa.uuid+"] "+format, args...)
+	} else {
+		pa.parent.log(level, "[path "+pa.name+"] "+format, args...)
+	}
 }
 
 func (pa *path) hasStaticSource() bool {
@@ -563,9 +576,16 @@ func (pa *path) shouldClose() bool {
 
 func (pa *path) externalCmdEnv() externalcmd.Environment {
 	_, port, _ := net.SplitHostPort(pa.rtspAddress)
+
+	match := pa.conf.Regexp.FindStringSubmatch(pa.name)
+	subpath := strings.Replace(pa.name, match[0], "", -1)
+
 	env := externalcmd.Environment{
-		"RTSP_PATH": pa.name,
-		"RTSP_PORT": port,
+		"RTSP_PATH":    pa.name,
+		"RTSP_PORT":    port,
+		"RTSP_UUID":    pa.uuid,
+		"RTSP_QUERY":   pa.query,
+		"RTSP_SUBPATH": subpath,
 	}
 
 	if len(pa.matches) > 1 {
