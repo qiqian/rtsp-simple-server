@@ -299,7 +299,6 @@ func (c *rtmpConn) runRead(ctx context.Context, u *url.URL) error {
 	videoMedia := res.stream.medias().FindFormat(&videoFormat)
 	videoFirstIDRFound := false
 	var videoStartDTS time.Duration
-	var videoDtsPrev time.Duration
 
 	var audioFormat *format.MPEG4Audio
 	audioMedia := res.stream.medias().FindFormat(&audioFormat)
@@ -368,7 +367,6 @@ func (c *rtmpConn) runRead(ctx context.Context, u *url.URL) error {
 					}
 
 					videoStartDTS = dts
-					videoDtsPrev = dts
 					dts = 0
 					pts -= videoStartDTS
 				} else {
@@ -379,22 +377,11 @@ func (c *rtmpConn) runRead(ctx context.Context, u *url.URL) error {
 					var err error
 					dts, err = h264DTSExtract(videoDTSExtractor, tdata.AU, pts)
 					if err != nil {
-						if strings.HasPrefix(err.Error(), "DTS is greater than PTS") {
-							c.log(logger.Warn, "drop invalid packet %v", err)
-							return nil
-						} else if strings.HasPrefix(err.Error(), "DTS is not monotonically increasing") {
-							c.log(logger.Warn, "Invalid packet %v", err)
-							dts = videoDtsPrev
-							dts -= videoStartDTS
-							pts -= videoStartDTS
-						} else {
-							return err
-						}
-					} else {
-						videoDtsPrev = dts
-						dts -= videoStartDTS
-						pts -= videoStartDTS
+						return err
 					}
+
+					dts -= videoStartDTS
+					pts -= videoStartDTS
 				}
 
 				avcc, err := h264.AVCCMarshal(tdata.AU)
