@@ -250,7 +250,7 @@ func h264DTSExtract(d *h264.DTSExtractor, au [][]byte, pts time.Duration) (time.
 	prevDTS_ptr := (*time.Duration)(unsafe.Pointer(uintptr(ptr) + unsafe.Offsetof(dummy.prevDTS)))
 
 	if *prevDTSFilled_ptr && dts <= *prevDTS_ptr {
-		fmt.Printf("DTS is not monotonically increasing, was %v, now is %v", *prevDTS_ptr, dts)
+		return -1, fmt.Errorf("DTS is not monotonically increasing, %v -> %v", *prevDTS_ptr, dts)
 	}
 
 	*prevDTSFilled_ptr = true
@@ -376,6 +376,13 @@ func (c *rtmpConn) runRead(ctx context.Context, u *url.URL) error {
 
 					var err error
 					dts, err = h264DTSExtract(videoDTSExtractor, tdata.AU, pts)
+					if dts < 0 && err != nil {
+						fmt.Printf("reset video stream %v\n", err)
+						videoStartPTSFilled = false
+						videoFirstIDRFound = false
+						videoDTSExtractor = nil
+						return nil
+					}
 					if err != nil {
 						return err
 					}
