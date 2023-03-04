@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/aler9/gortsplib/v2/pkg/codecs/h264"
 	"github.com/aler9/gortsplib/v2/pkg/codecs/mpeg4audio"
@@ -218,6 +219,46 @@ func (c *rtmpConn) runInner(ctx context.Context) error {
 	return c.runPublish(ctx, u)
 }
 
+//go:linkname extractInner github.com/aler9/gortsplib/v2/pkg/codecs/h264.(*DTSExtractor).extractInner
+func extractInner(d *h264.DTSExtractor, au [][]byte, pts time.Duration) (time.Duration, error)
+
+// Extract extracts the DTS of a access unit.
+type DTSExtractorShadow struct {
+	spsp            *h264.SPS
+	prevDTSFilled   bool
+	prevDTS         time.Duration
+	expectedPOC     uint32
+	reorderedFrames int
+	pauseDTS        int
+	pocIncrement    int
+}
+
+func h264DTSExtract(d *h264.DTSExtractor, au [][]byte, pts time.Duration) (time.Duration, error) {
+	dts, err := extractInner(d, au, pts)
+	if err != nil {
+		return 0, err
+	}
+
+	if dts > pts {
+		return 0, fmt.Errorf("DTS is greater than PTS")
+	}
+
+	ptr := unsafe.Pointer(d)
+
+	dummy := DTSExtractorShadow{}
+	prevDTSFilled_ptr := (*bool)(unsafe.Pointer(uintptr(ptr) + unsafe.Offsetof(dummy.prevDTSFilled)))
+	prevDTS_ptr := (*time.Duration)(unsafe.Pointer(uintptr(ptr) + unsafe.Offsetof(dummy.prevDTS)))
+
+	if *prevDTSFilled_ptr && dts <= *prevDTS_ptr {
+		fmt.Printf("DTS is not monotonically increasing, was %v, now is %v", *prevDTS_ptr, dts)
+	}
+
+	*prevDTSFilled_ptr = true
+	*prevDTS_ptr = dts
+
+	return dts, err
+}
+
 func (c *rtmpConn) runRead(ctx context.Context, u *url.URL) error {
 	pathName, query, rawQuery := pathNameAndQuery(u)
 
@@ -321,7 +362,7 @@ func (c *rtmpConn) runRead(ctx context.Context, u *url.URL) error {
 					videoDTSExtractor = h264.NewDTSExtractor()
 
 					var err error
-					dts, err = videoDTSExtractor.Extract(tdata.AU, pts)
+					dts, err = h264DTSExtract(videoDTSExtractor, tdata.AU, pts)
 					if err != nil {
 						return err
 					}
@@ -336,7 +377,7 @@ func (c *rtmpConn) runRead(ctx context.Context, u *url.URL) error {
 					}
 
 					var err error
-					dts, err = videoDTSExtractor.Extract(tdata.AU, pts)
+					dts, err = h264DTSExtract(videoDTSExtractor, tdata.AU, pts)
 					if err != nil {
 						if strings.HasPrefix(err.Error(), "DTS is greater than PTS") {
 							c.log(logger.Warn, "drop invalid packet %v", err)
