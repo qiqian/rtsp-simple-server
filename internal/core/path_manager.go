@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"strings"
 
 	"github.com/aler9/rtsp-simple-server/internal/conf"
 	"github.com/aler9/rtsp-simple-server/internal/externalcmd"
@@ -236,11 +237,12 @@ outer:
 			}
 
 			// create path if it doesn't exist
-			if _, ok := pm.paths[req.uuid.String()]; !ok {
-				pm.createPath(pathConfName, pathConf, req.pathName, req.uuid.String(), req.query, pathMatches)
+			realpath := strings.Replace(req.uuid.String(), "-", "", -1)
+			if _, ok := pm.paths[realpath]; !ok {
+				pm.createPath(pathConfName, pathConf, req.pathName, realpath, req.query, pathMatches)
 			}
 
-			req.res <- pathReaderSetupPlayRes{path: pm.paths[req.uuid.String()]}
+			req.res <- pathReaderSetupPlayRes{path: pm.paths[realpath]}
 
 		case req := <-pm.chPublisherAdd:
 			pathConfName, pathConf, pathMatches, err := pm.findPathConf(req.pathName)
