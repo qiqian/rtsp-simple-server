@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -31,7 +32,7 @@ const (
 )
 
 //go:embed hls_index.html
-var hlsIndex []byte
+var hlsIndex string
 
 type hlsMuxerResponse struct {
 	muxer *hlsMuxer
@@ -315,6 +316,7 @@ func (m *hlsMuxer) runInner(innerCtx context.Context, innerReady chan struct{}) 
 		uint64(m.segmentMaxSize),
 		videoFormat,
 		audioFormat,
+		m.query,
 	)
 	if err != nil {
 		return fmt.Errorf("muxer error: %v", err)
@@ -545,12 +547,13 @@ func (m *hlsMuxer) handleRequest(req *hlsMuxerRequest) func() *hls.MuxerFileResp
 
 	if req.file == "" {
 		return func() *hls.MuxerFileResponse {
+			indexBody := strings.Replace(hlsIndex, "${QUERY}", "?"+req.query, -1)
 			return &hls.MuxerFileResponse{
 				Status: http.StatusOK,
 				Header: map[string]string{
 					"Content-Type": `text/html`,
 				},
-				Body: bytes.NewReader(hlsIndex),
+				Body: bytes.NewReader([]byte(indexBody)),
 			}
 		}
 	}

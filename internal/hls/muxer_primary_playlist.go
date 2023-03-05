@@ -14,17 +14,20 @@ type muxerPrimaryPlaylist struct {
 	fmp4       bool
 	videoTrack format.Format
 	audioTrack format.Format
+	query      string
 }
 
 func newMuxerPrimaryPlaylist(
 	fmp4 bool,
 	videoTrack format.Format,
 	audioTrack format.Format,
+	query string,
 ) *muxerPrimaryPlaylist {
 	return &muxerPrimaryPlaylist{
 		fmp4:       fmp4,
 		videoTrack: videoTrack,
 		audioTrack: audioTrack,
+		query:      query,
 	}
 }
 
@@ -56,7 +59,7 @@ func (p *muxerPrimaryPlaylist) file() *MuxerFileResponse {
 				"#EXT-X-INDEPENDENT-SEGMENTS\n" +
 				"\n" +
 				"#EXT-X-STREAM-INF:BANDWIDTH=200000,CODECS=\"" + strings.Join(codecs, ",") + "\"\n" +
-				"stream.m3u8\n"))
+				"stream.m3u8?" + p.query + "\n"))
 		}(),
 	}
 }

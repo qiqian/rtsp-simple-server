@@ -285,7 +285,6 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 
 	// remove leading prefix
 	pa := ctx.Request.URL.Path[1:]
-	s.log(logger.Info, "%v request %v query %v\n", ctx.Request.RemoteAddr, pa, ctx.Request.URL.RawQuery)
 
 	switch pa {
 	case "", "favicon.ico":
@@ -321,7 +320,8 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 
 	hash := md5.Sum([]byte(ctx.Request.RemoteAddr + "@" + dir + "?" + query))
 	uuid := hex.EncodeToString(hash[:])
-	uuid = dir
+	// uuid = dir
+	s.log(logger.Info, "%v request(%v) %v query %v\n", ctx.Request.RemoteAddr, uuid, pa, query)
 
 	hreq := &hlsMuxerRequest{
 		path:  dir,

@@ -72,6 +72,7 @@ type muxerVariantFMP4Playlist struct {
 	segmentCount int
 	videoTrack   format.Format
 	audioTrack   format.Format
+	query        string
 
 	mutex              sync.Mutex
 	cond               *sync.Cond
@@ -91,12 +92,14 @@ func newMuxerVariantFMP4Playlist(
 	segmentCount int,
 	videoTrack format.Format,
 	audioTrack format.Format,
+	query string,
 ) *muxerVariantFMP4Playlist {
 	p := &muxerVariantFMP4Playlist{
 		lowLatency:     lowLatency,
 		segmentCount:   segmentCount,
 		videoTrack:     videoTrack,
 		audioTrack:     audioTrack,
+		query:          query,
 		segmentsByName: make(map[string]*muxerVariantFMP4Segment),
 		partsByName:    make(map[string]*muxerVariantFMP4Part),
 	}
@@ -293,7 +296,7 @@ func (p *muxerVariantFMP4Playlist) fullPlaylist(isDeltaUpdate bool) io.Reader {
 	skipped := 0
 
 	if !isDeltaUpdate {
-		cnt += "#EXT-X-MAP:URI=\"init.mp4\"\n"
+		cnt += "#EXT-X-MAP:URI=\"init.mp4?" + p.query + "\"\n"
 	} else {
 		var curDuration time.Duration
 		shown := 0
@@ -322,7 +325,7 @@ func (p *muxerVariantFMP4Playlist) fullPlaylist(isDeltaUpdate bool) io.Reader {
 			if p.lowLatency && (len(p.segments)-i) <= 2 {
 				for _, part := range seg.parts {
 					cnt += "#EXT-X-PART:DURATION=" + strconv.FormatFloat(part.renderedDuration.Seconds(), 'f', 5, 64) +
-						",URI=\"" + part.name() + ".mp4\""
+						",URI=\"" + part.name() + ".mp4?" + p.query + "\""
 					if part.isIndependent {
 						cnt += ",INDEPENDENT=YES"
 					}
@@ -331,19 +334,19 @@ func (p *muxerVariantFMP4Playlist) fullPlaylist(isDeltaUpdate bool) io.Reader {
 			}
 
 			cnt += "#EXTINF:" + strconv.FormatFloat(seg.renderedDuration.Seconds(), 'f', 5, 64) + ",\n" +
-				seg.name + ".mp4\n"
+				seg.name + ".mp4?" + p.query + "\n"
 
 		case *muxerVariantFMP4Gap:
 			cnt += "#EXT-X-GAP\n" +
 				"#EXTINF:" + strconv.FormatFloat(seg.renderedDuration.Seconds(), 'f', 5, 64) + ",\n" +
-				"gap.mp4\n"
+				"gap.mp4?" + p.query + "\n"
 		}
 	}
 
 	if p.lowLatency {
 		for _, part := range p.nextSegmentParts {
 			cnt += "#EXT-X-PART:DURATION=" + strconv.FormatFloat(part.renderedDuration.Seconds(), 'f', 5, 64) +
-				",URI=\"" + part.name() + ".mp4\""
+				",URI=\"" + part.name() + ".mp4?" + p.query + "\""
 			if part.isIndependent {
 				cnt += ",INDEPENDENT=YES"
 			}
@@ -352,7 +355,7 @@ func (p *muxerVariantFMP4Playlist) fullPlaylist(isDeltaUpdate bool) io.Reader {
 
 		// preload hint must always be present
 		// otherwise hls.js goes into a loop
-		cnt += "#EXT-X-PRELOAD-HINT:TYPE=PART,URI=\"" + fmp4PartName(p.nextPartID) + ".mp4\"\n"
+		cnt += "#EXT-X-PRELOAD-HINT:TYPE=PART,URI=\"" + fmp4PartName(p.nextPartID) + ".mp4?" + p.query + "\"\n"
 	}
 
 	return bytes.NewReader([]byte(cnt))
