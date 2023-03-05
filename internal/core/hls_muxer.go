@@ -17,7 +17,6 @@ import (
 	"github.com/aler9/gortsplib/v2/pkg/media"
 	"github.com/aler9/gortsplib/v2/pkg/ringbuffer"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 
 	"github.com/aler9/rtsp-simple-server/internal/conf"
 	"github.com/aler9/rtsp-simple-server/internal/formatprocessor"
@@ -43,7 +42,7 @@ type hlsMuxerRequest struct {
 	path  string
 	file  string
 	query string
-	uuid  uuid.UUID
+	uuid  string
 	ctx   *gin.Context
 	res   chan *hlsMuxerResponse
 }
@@ -70,7 +69,7 @@ type hlsMuxer struct {
 	readBufferCount           int
 	wg                        *sync.WaitGroup
 	pathName                  string
-	uuid                      uuid.UUID
+	uuid                      string
 	query                     string
 	pathManager               hlsMuxerPathManager
 	parent                    hlsMuxerParent
@@ -105,7 +104,7 @@ func newHLSMuxer(
 	req *hlsMuxerRequest,
 	wg *sync.WaitGroup,
 	pathName string,
-	uuid uuid.UUID,
+	uuid string,
 	query string,
 	pathManager hlsMuxerPathManager,
 	parent hlsMuxerParent,

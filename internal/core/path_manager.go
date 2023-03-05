@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"strings"
 
 	"github.com/aler9/rtsp-simple-server/internal/conf"
 	"github.com/aler9/rtsp-simple-server/internal/externalcmd"
@@ -237,11 +236,12 @@ outer:
 			}
 
 			// create path if it doesn't exist
-			realpath := strings.Replace(req.uuid.String(), "-", "", -1)
+			realpath := req.uuid
 			if _, ok := pm.paths[realpath]; !ok {
 				pm.createPath(pathConfName, pathConf, req.pathName, realpath, req.query, pathMatches)
 			}
 
+			pm.log(logger.Info, "reader add at %v\n", realpath)
 			req.res <- pathReaderSetupPlayRes{path: pm.paths[realpath]}
 
 		case req := <-pm.chPublisherAdd:
@@ -265,6 +265,7 @@ outer:
 				pm.createPath(pathConfName, pathConf, req.pathName, "", "", pathMatches)
 			}
 
+			pm.log(logger.Info, "publisher add at %v\n", req.pathName)
 			req.res <- pathPublisherAnnounceRes{path: pm.paths[req.pathName]}
 
 		case s := <-pm.chHLSServerSet:

@@ -277,7 +277,7 @@ func (c *rtmpConn) runRead(ctx context.Context, u *url.URL) error {
 
 	res := c.pathManager.readerAdd(pathReaderAddReq{
 		author:   c,
-		uuid:     c.uuid,
+		uuid:     strings.Replace(c.uuid.String(), "-", "", -1),
 		pathName: pathName,
 		query:    query.Encode(),
 		authenticate: func(

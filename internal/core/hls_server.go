@@ -2,19 +2,21 @@ package core
 
 import (
 	"context"
+	"crypto/md5"
 	"crypto/tls"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	gopath "path"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 
 	"github.com/aler9/rtsp-simple-server/internal/conf"
 	"github.com/aler9/rtsp-simple-server/internal/logger"
@@ -210,7 +212,7 @@ outer:
 
 		case pa := <-s.chPathSourceNotReady:
 			if s.alwaysRemux {
-				c, ok := s.muxers[pa.name]
+				c, ok := s.muxers[pa.uuid]
 				if ok {
 					c.close()
 					delete(s.muxers, pa.name)
@@ -218,7 +220,7 @@ outer:
 			}
 
 		case req := <-s.request:
-			r, ok := s.muxers[req.path]
+			r, ok := s.muxers[req.uuid]
 			switch {
 			case ok:
 				r.processRequest(req)
@@ -232,7 +234,7 @@ outer:
 			}
 
 		case c := <-s.chMuxerClose:
-			if c2, ok := s.muxers[c.PathName()]; !ok || c2 != c {
+			if c2, ok := s.muxers[c.uuid]; !ok || c2 != c {
 				continue
 			}
 			delete(s.muxers, c.PathName())
@@ -284,6 +286,7 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 
 	// remove leading prefix
 	pa := ctx.Request.URL.Path[1:]
+	s.log(logger.Info, "%v request %v query %v\n", ctx.Request.RemoteAddr, pa, ctx.Request.URL.RawQuery)
 
 	switch pa {
 	case "", "favicon.ico":
@@ -300,9 +303,21 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 		return pa, ""
 	}()
 
-	if fname == "" && !strings.HasSuffix(dir, "/") {
-		ctx.Writer.Header().Set("Location", "/"+dir+"/"+"?"+ctx.Request.URL.RawQuery)
-		ctx.Writer.WriteHeader(http.StatusMovedPermanently)
+	if fname == "" || strings.HasSuffix(fname, "m3u8") || strings.HasSuffix(dir, "/") {
+		m3u8 := "#EXTM3U\n"
+		m3u8 += "#EXT-X-PLAYLIST-TYPE:VOD\n"
+		m3u8 += "#EXT-X-TARGETDURATION:3610\n"
+		m3u8 += "#EXT-X-VERSION:4\n"
+		m3u8 += "#EXT-X-MEDIA-SEQUENCE:0\n"
+		m3u8 += "#EXTINF:3610.0,\n"
+		m3u8 += "RTSP_ARGS=" + ctx.Request.URL.RawQuery + ".ts\n"
+		m3u8 += "#EXT-X-ENDLIST\n"
+
+		ctx.Writer.Header().Set("Content-Length", strconv.Itoa(len(m3u8)))
+		ctx.Writer.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
+		ctx.Writer.Header().Set("Connection", "keep-alive")
+		ctx.Writer.WriteHeader(http.StatusOK)
+		ctx.Writer.WriteString(m3u8)
 		return
 	}
 
@@ -311,12 +326,19 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 	}
 
 	dir = strings.TrimSuffix(dir, "/")
+	query := strings.Replace(fname, "RTSP_ARGS=", "", -1)
+	if strings.HasSuffix(query, ".ts") {
+		query = query[:len(query)-3]
+	}
+
+	hash := md5.Sum([]byte(ctx.Request.RemoteAddr + "@" + dir + "?" + query))
+	uuid := hex.EncodeToString(hash[:])
 
 	hreq := &hlsMuxerRequest{
 		path:  dir,
 		file:  fname,
-		query: ctx.Request.URL.RawQuery,
-		uuid:  uuid.New(),
+		query: query,
+		uuid:  uuid,
 		ctx:   ctx,
 		res:   make(chan *hlsMuxerResponse),
 	}
@@ -363,7 +385,7 @@ func (s *hlsServer) createMuxer(pathName string, remoteAddr string, req *hlsMuxe
 		req.query,
 		s.pathManager,
 		s)
-	s.muxers[pathName] = r
+	s.muxers[req.uuid] = r
 	return r
 }
 

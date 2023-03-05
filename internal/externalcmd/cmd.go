@@ -16,7 +16,7 @@ type Environment map[string]string
 // Cmd is an external command.
 type Cmd struct {
 	pool    *Pool
-	cmdstr  string
+	Cmdstr  string
 	restart bool
 	env     Environment
 	onExit  func(int)
@@ -39,7 +39,7 @@ func NewCmd(
 
 	e := &Cmd{
 		pool:      pool,
-		cmdstr:    cmdstr,
+		Cmdstr:    cmdstr,
 		restart:   restart,
 		env:       env,
 		onExit:    onExit,

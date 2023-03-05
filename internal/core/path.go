@@ -13,7 +13,6 @@ import (
 	"github.com/aler9/gortsplib/v2/pkg/base"
 	"github.com/aler9/gortsplib/v2/pkg/media"
 	"github.com/aler9/gortsplib/v2/pkg/url"
-	"github.com/google/uuid"
 
 	"github.com/aler9/rtsp-simple-server/internal/conf"
 	"github.com/aler9/rtsp-simple-server/internal/externalcmd"
@@ -124,7 +123,7 @@ type pathReaderSetupPlayRes struct {
 
 type pathReaderAddReq struct {
 	author       reader
-	uuid         uuid.UUID
+	uuid         string
 	pathName     string
 	query        string
 	authenticate authenticateFunc
@@ -625,7 +624,6 @@ func (pa *path) onDemandStaticSourceStop() {
 }
 
 func (pa *path) onDemandPublisherStart() {
-	pa.log(logger.Info, "runOnDemand command started")
 	pa.onDemandCmd = externalcmd.NewCmd(
 		pa.externalCmdPool,
 		pa.conf.RunOnDemand,
@@ -634,6 +632,7 @@ func (pa *path) onDemandPublisherStart() {
 		func(co int) {
 			pa.log(logger.Info, "runOnDemand command exited with code %d", co)
 		})
+	pa.log(logger.Info, "runOnDemand : %v", pa.onDemandCmd.Cmdstr)
 
 	pa.onDemandPublisherReadyTimer.Stop()
 	pa.onDemandPublisherReadyTimer = time.NewTimer(time.Duration(pa.conf.RunOnDemandStartTimeout))
