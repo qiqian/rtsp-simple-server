@@ -17,6 +17,7 @@ import (
 	"github.com/aler9/gortsplib/v2/pkg/media"
 	"github.com/aler9/gortsplib/v2/pkg/ringbuffer"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"github.com/aler9/rtsp-simple-server/internal/conf"
 	"github.com/aler9/rtsp-simple-server/internal/formatprocessor"
@@ -39,10 +40,12 @@ type hlsMuxerResponse struct {
 }
 
 type hlsMuxerRequest struct {
-	path string
-	file string
-	ctx  *gin.Context
-	res  chan *hlsMuxerResponse
+	path  string
+	file  string
+	query string
+	uuid  uuid.UUID
+	ctx   *gin.Context
+	res   chan *hlsMuxerResponse
 }
 
 type hlsMuxerPathManager interface {
@@ -67,6 +70,8 @@ type hlsMuxer struct {
 	readBufferCount           int
 	wg                        *sync.WaitGroup
 	pathName                  string
+	uuid                      uuid.UUID
+	query                     string
 	pathManager               hlsMuxerPathManager
 	parent                    hlsMuxerParent
 
@@ -100,6 +105,8 @@ func newHLSMuxer(
 	req *hlsMuxerRequest,
 	wg *sync.WaitGroup,
 	pathName string,
+	uuid uuid.UUID,
+	query string,
 	pathManager hlsMuxerPathManager,
 	parent hlsMuxerParent,
 ) *hlsMuxer {
@@ -118,6 +125,8 @@ func newHLSMuxer(
 		readBufferCount:           readBufferCount,
 		wg:                        wg,
 		pathName:                  pathName,
+		uuid:                      uuid,
+		query:                     query,
 		pathManager:               pathManager,
 		parent:                    parent,
 		ctx:                       ctx,
@@ -264,6 +273,8 @@ func (m *hlsMuxer) runInner(innerCtx context.Context, innerReady chan struct{}) 
 	res := m.pathManager.readerAdd(pathReaderAddReq{
 		author:   m,
 		pathName: m.pathName,
+		uuid:     m.uuid,
+		query:    m.query,
 	})
 	if res.err != nil {
 		return res.err

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"github.com/aler9/rtsp-simple-server/internal/conf"
 	"github.com/aler9/rtsp-simple-server/internal/logger"
@@ -312,10 +313,12 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 	dir = strings.TrimSuffix(dir, "/")
 
 	hreq := &hlsMuxerRequest{
-		path: dir,
-		file: fname,
-		ctx:  ctx,
-		res:  make(chan *hlsMuxerResponse),
+		path:  dir,
+		file:  fname,
+		query: ctx.Request.URL.RawQuery,
+		uuid:  uuid.New(),
+		ctx:   ctx,
+		res:   make(chan *hlsMuxerResponse),
 	}
 
 	select {
@@ -356,6 +359,8 @@ func (s *hlsServer) createMuxer(pathName string, remoteAddr string, req *hlsMuxe
 		req,
 		&s.wg,
 		pathName,
+		req.uuid,
+		req.query,
 		s.pathManager,
 		s)
 	s.muxers[pathName] = r
