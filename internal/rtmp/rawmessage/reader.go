@@ -20,6 +20,7 @@ type readerChunkStream struct {
 	curBodyLen         *uint32
 	curBody            []byte
 	curTimestampDelta  *uint32
+	lastChunkType      byte
 }
 
 func (rc *readerChunkStream) readChunk(c chunk.Chunk, chunkBodySize uint32) error {
@@ -77,6 +78,7 @@ func (rc *readerChunkStream) readMessage(typ byte) (*Message, error) {
 		rc.mr.msg.Type = rc.mr.c0.Type
 		rc.mr.msg.MessageStreamID = rc.mr.c0.MessageStreamID
 		rc.mr.msg.Body = rc.mr.c0.Body
+		rc.lastChunkType = 0
 		return &rc.mr.msg, nil
 
 	case 1:
@@ -111,6 +113,7 @@ func (rc *readerChunkStream) readMessage(typ byte) (*Message, error) {
 		rc.mr.msg.Type = rc.mr.c1.Type
 		rc.mr.msg.MessageStreamID = *rc.curMessageStreamID
 		rc.mr.msg.Body = rc.mr.c1.Body
+		rc.lastChunkType = 1
 		return &rc.mr.msg, nil
 
 	case 2:
@@ -146,9 +149,13 @@ func (rc *readerChunkStream) readMessage(typ byte) (*Message, error) {
 		rc.mr.msg.Type = *rc.curType
 		rc.mr.msg.MessageStreamID = *rc.curMessageStreamID
 		rc.mr.msg.Body = rc.mr.c2.Body
+		rc.lastChunkType = 2
 		return &rc.mr.msg, nil
 
 	default: // 3
+		if rc.lastChunkType == 0 {
+			rc.curTimestampDelta = &rc.mr.c0.Timestamp
+		}
 		if rc.curBody == nil && rc.curTimestampDelta == nil {
 			return nil, fmt.Errorf("received type 3 chunk without previous chunk")
 		}
@@ -202,6 +209,7 @@ func (rc *readerChunkStream) readMessage(typ byte) (*Message, error) {
 		rc.mr.msg.Type = *rc.curType
 		rc.mr.msg.MessageStreamID = *rc.curMessageStreamID
 		rc.mr.msg.Body = rc.mr.c3.Body
+		rc.lastChunkType = 3
 		return &rc.mr.msg, nil
 	}
 }
@@ -276,6 +284,7 @@ func (r *Reader) Read() (*Message, error) {
 			return nil, err
 		}
 
+		msg.Typ = typ
 		msg.ChunkStreamID = chunkStreamID
 
 		return msg, err

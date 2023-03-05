@@ -11,6 +11,7 @@ import (
 
 // MsgCommandAMF0 is a AMF0 command message.
 type MsgCommandAMF0 struct {
+	Ctyp            byte
 	ChunkStreamID   int
 	MessageStreamID uint32
 	Name            string
@@ -20,6 +21,7 @@ type MsgCommandAMF0 struct {
 
 // Unmarshal implements Message.
 func (m *MsgCommandAMF0) Unmarshal(raw *rawmessage.Message) error {
+	m.Ctyp = raw.Typ
 	m.ChunkStreamID = raw.ChunkStreamID
 	m.MessageStreamID = raw.MessageStreamID
 
