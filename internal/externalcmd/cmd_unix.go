@@ -12,7 +12,7 @@ import (
 )
 
 func (e *Cmd) runInner() (int, bool) {
-	cmdparts, err := shellquote.Split(e.cmdstr)
+	cmdparts, err := shellquote.Split(e.Cmdstr)
 	if err != nil {
 		return 0, true
 	}
