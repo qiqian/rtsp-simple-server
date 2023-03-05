@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	gopath "path"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -303,21 +302,9 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 		return pa, ""
 	}()
 
-	if fname == "" || strings.HasSuffix(fname, "m3u8") || strings.HasSuffix(dir, "/") {
-		m3u8 := "#EXTM3U\n"
-		m3u8 += "#EXT-X-PLAYLIST-TYPE:VOD\n"
-		m3u8 += "#EXT-X-TARGETDURATION:3610\n"
-		m3u8 += "#EXT-X-VERSION:4\n"
-		m3u8 += "#EXT-X-MEDIA-SEQUENCE:0\n"
-		m3u8 += "#EXTINF:3610.0,\n"
-		m3u8 += "RTSP_ARGS=" + ctx.Request.URL.RawQuery + ".ts\n"
-		m3u8 += "#EXT-X-ENDLIST\n"
-
-		ctx.Writer.Header().Set("Content-Length", strconv.Itoa(len(m3u8)))
-		ctx.Writer.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
-		ctx.Writer.Header().Set("Connection", "keep-alive")
-		ctx.Writer.WriteHeader(http.StatusOK)
-		ctx.Writer.WriteString(m3u8)
+	if fname == "" && !strings.HasSuffix(dir, "/") {
+		ctx.Writer.Header().Set("Location", "/"+dir+"/"+"?"+ctx.Request.URL.RawQuery)
+		ctx.Writer.WriteHeader(http.StatusMovedPermanently)
 		return
 	}
 
@@ -326,17 +313,19 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 	}
 
 	dir = strings.TrimSuffix(dir, "/")
-	query := strings.Replace(fname, "RTSP_ARGS=", "", -1)
-	if strings.HasSuffix(query, ".ts") {
-		query = query[:len(query)-3]
-	}
+	// query := strings.Replace(fname, "RTSP_ARGS=", "", -1)
+	// if strings.HasSuffix(query, ".ts") {
+	// 	query = query[:len(query)-3]
+	// }
+	query := ctx.Request.URL.RawQuery
 
 	hash := md5.Sum([]byte(ctx.Request.RemoteAddr + "@" + dir + "?" + query))
 	uuid := hex.EncodeToString(hash[:])
+	uuid = dir
 
 	hreq := &hlsMuxerRequest{
 		path:  dir,
-		file:  "",
+		file:  fname,
 		query: query,
 		uuid:  uuid,
 		ctx:   ctx,
