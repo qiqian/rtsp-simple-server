@@ -321,7 +321,7 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 	hash := md5.Sum([]byte(ctx.Request.RemoteAddr + "@" + dir + "?" + query))
 	uuid := hex.EncodeToString(hash[:])
 	// uuid = dir
-	s.log(logger.Info, "%v request(%v) %v query %v\n", ctx.Request.RemoteAddr, uuid, pa, query)
+	s.log(logger.Info, "%v request(%v) %v?%v\n", ctx.Request.RemoteAddr, uuid, pa, query)
 
 	hreq := &hlsMuxerRequest{
 		path:  dir,
