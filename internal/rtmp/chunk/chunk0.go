@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"bufio"
 	"io"
 )
 
@@ -9,7 +10,7 @@ import (
 // the start of a chunk stream, and whenever the stream timestamp goes
 // backward (e.g., because of a backward seek).
 type Chunk0 struct {
-	ChunkStreamID   byte
+	ChunkStreamID   int
 	Timestamp       uint32
 	Type            MessageType
 	MessageStreamID uint32
@@ -19,17 +20,23 @@ type Chunk0 struct {
 
 // Read reads the chunk.
 func (c *Chunk0) Read(r io.Reader, chunkMaxBodyLen uint32) error {
-	header := make([]byte, 12)
-	_, err := io.ReadFull(r, header)
+	br := bufio.NewReader(r)
+	_, csid, err0 := ReadBasicHeader(br)
+	if err0 != nil {
+		return err0
+	}
+	c.ChunkStreamID = csid
+
+	header := make([]byte, 11)
+	_, err := io.ReadFull(br, header)
 	if err != nil {
 		return err
 	}
 
-	c.ChunkStreamID = header[0] & 0x3F
-	c.Timestamp = uint32(header[1])<<16 | uint32(header[2])<<8 | uint32(header[3])
-	c.BodyLen = uint32(header[4])<<16 | uint32(header[5])<<8 | uint32(header[6])
-	c.Type = MessageType(header[7])
-	c.MessageStreamID = uint32(header[8])<<24 | uint32(header[9])<<16 | uint32(header[10])<<8 | uint32(header[11])
+	c.Timestamp = uint32(header[0])<<16 | uint32(header[1])<<8 | uint32(header[2])
+	c.BodyLen = uint32(header[3])<<16 | uint32(header[4])<<8 | uint32(header[5])
+	c.Type = MessageType(header[6])
+	c.MessageStreamID = uint32(header[7])<<24 | uint32(header[8])<<16 | uint32(header[9])<<8 | uint32(header[10])
 
 	chunkBodyLen := c.BodyLen
 	if chunkBodyLen > chunkMaxBodyLen {
@@ -37,25 +44,31 @@ func (c *Chunk0) Read(r io.Reader, chunkMaxBodyLen uint32) error {
 	}
 
 	c.Body = make([]byte, chunkBodyLen)
-	_, err = io.ReadFull(r, c.Body)
+	_, err = io.ReadFull(br, c.Body)
 	return err
 }
 
 // Marshal writes the chunk.
 func (c Chunk0) Marshal() ([]byte, error) {
-	buf := make([]byte, 12+len(c.Body))
-	buf[0] = c.ChunkStreamID
-	buf[1] = byte(c.Timestamp >> 16)
-	buf[2] = byte(c.Timestamp >> 8)
-	buf[3] = byte(c.Timestamp)
-	buf[4] = byte(c.BodyLen >> 16)
-	buf[5] = byte(c.BodyLen >> 8)
-	buf[6] = byte(c.BodyLen)
-	buf[7] = byte(c.Type)
-	buf[8] = byte(c.MessageStreamID >> 24)
-	buf[9] = byte(c.MessageStreamID >> 16)
-	buf[10] = byte(c.MessageStreamID >> 8)
-	buf[11] = byte(c.MessageStreamID)
-	copy(buf[12:], c.Body)
-	return buf, nil
+	header := WriteBasicHeader(byte(0), c.ChunkStreamID)
+
+	raw := make([]byte, len(header)+11+len(c.Body))
+	copy(raw[0:], header)
+
+	buf := raw[len(header):]
+
+	buf[0] = byte(c.Timestamp >> 16)
+	buf[1] = byte(c.Timestamp >> 8)
+	buf[2] = byte(c.Timestamp)
+	buf[3] = byte(c.BodyLen >> 16)
+	buf[4] = byte(c.BodyLen >> 8)
+	buf[5] = byte(c.BodyLen)
+	buf[6] = byte(c.Type)
+	buf[7] = byte(c.MessageStreamID >> 24)
+	buf[8] = byte(c.MessageStreamID >> 16)
+	buf[9] = byte(c.MessageStreamID >> 8)
+	buf[10] = byte(c.MessageStreamID)
+	copy(buf[11:], c.Body)
+
+	return raw, nil
 }

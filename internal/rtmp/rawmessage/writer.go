@@ -150,7 +150,7 @@ type Writer struct {
 	chunkSize        uint32
 	ackWindowSize    uint32
 	ackValue         uint32
-	chunkStreams     map[byte]*writerChunkStream
+	chunkStreams     map[int]*writerChunkStream
 }
 
 // NewWriter allocates a Writer.
@@ -160,7 +160,7 @@ func NewWriter(w *bytecounter.Writer, checkAcknowledge bool) *Writer {
 		bw:               bufio.NewWriter(w),
 		checkAcknowledge: checkAcknowledge,
 		chunkSize:        128,
-		chunkStreams:     make(map[byte]*writerChunkStream),
+		chunkStreams:     make(map[int]*writerChunkStream),
 	}
 }
 

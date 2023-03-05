@@ -17,7 +17,7 @@ const (
 
 // MsgAudio is an audio message.
 type MsgAudio struct {
-	ChunkStreamID   byte
+	ChunkStreamID   int
 	DTS             time.Duration
 	MessageStreamID uint32
 	Rate            uint8

@@ -220,7 +220,7 @@ type Reader struct {
 	c1            chunk.Chunk1
 	c2            chunk.Chunk2
 	c3            chunk.Chunk3
-	chunkStreams  map[byte]*readerChunkStream
+	chunkStreams  map[int]*readerChunkStream
 }
 
 // NewReader allocates a Reader.
@@ -230,7 +230,7 @@ func NewReader(r *bytecounter.Reader, onAckNeeded func(uint32) error) *Reader {
 		br:           bufio.NewReader(r),
 		onAckNeeded:  onAckNeeded,
 		chunkSize:    128,
-		chunkStreams: make(map[byte]*readerChunkStream),
+		chunkStreams: make(map[int]*readerChunkStream),
 	}
 }
 
@@ -247,13 +247,16 @@ func (r *Reader) SetWindowAckSize(v uint32) {
 // Read reads a Message.
 func (r *Reader) Read() (*Message, error) {
 	for {
-		byt, err := r.br.ReadByte()
+		basicHeaderLen := 1
+		typ, chunkStreamID, err := chunk.ReadBasicHeader(r.br)
+		if chunkStreamID > 319 {
+			basicHeaderLen = 3
+		} else if chunkStreamID >= 64 {
+			basicHeaderLen = 2
+		}
 		if err != nil {
 			return nil, err
 		}
-
-		typ := byt >> 6
-		chunkStreamID := byt & 0x3F
 
 		rc, ok := r.chunkStreams[chunkStreamID]
 		if !ok {
@@ -261,7 +264,9 @@ func (r *Reader) Read() (*Message, error) {
 			r.chunkStreams[chunkStreamID] = rc
 		}
 
-		r.br.UnreadByte()
+		for i := 0; i < basicHeaderLen; i++ {
+			r.br.UnreadByte()
+		}
 
 		msg, err := rc.readMessage(typ)
 		if err != nil {

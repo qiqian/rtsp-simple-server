@@ -9,7 +9,7 @@ import (
 
 // Message is a raw message.
 type Message struct {
-	ChunkStreamID   byte
+	ChunkStreamID   int
 	Timestamp       time.Duration
 	Type            chunk.MessageType
 	MessageStreamID uint32

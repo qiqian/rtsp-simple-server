@@ -17,7 +17,7 @@ const (
 
 // MsgVideo is a video message.
 type MsgVideo struct {
-	ChunkStreamID   byte
+	ChunkStreamID   int
 	DTS             time.Duration
 	MessageStreamID uint32
 	IsKeyFrame      bool

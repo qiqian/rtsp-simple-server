@@ -11,7 +11,7 @@ import (
 
 // MsgCommandAMF0 is a AMF0 command message.
 type MsgCommandAMF0 struct {
-	ChunkStreamID   byte
+	ChunkStreamID   int
 	MessageStreamID uint32
 	Name            string
 	CommandID       int
