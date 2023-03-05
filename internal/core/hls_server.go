@@ -336,7 +336,7 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 
 	hreq := &hlsMuxerRequest{
 		path:  dir,
-		file:  fname,
+		file:  "",
 		query: query,
 		uuid:  uuid,
 		ctx:   ctx,
