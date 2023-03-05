@@ -217,7 +217,7 @@ func (c *rtmpConn) runInner(ctx context.Context) error {
 			default:
 				cmd, err := c.conn.ReadCommand()
 				if cmd != nil {
-					fmt.Printf("RTMP CMD : %v\n", cmd.Name)
+					c.log(logger.Info, "RTMP CMD : %vn", cmd.Name)
 				}
 				if err != nil {
 					//fmt.Printf("RTMP ERR : %v\n", err)
