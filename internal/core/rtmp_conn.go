@@ -201,17 +201,30 @@ func (c *rtmpConn) run() {
 }
 
 func (c *rtmpConn) runInner(ctx context.Context) error {
-	go func() {
-		<-ctx.Done()
-		c.nconn.Close()
-	}()
-
 	c.nconn.SetReadDeadline(time.Now().Add(time.Duration(c.readTimeout)))
 	c.nconn.SetWriteDeadline(time.Now().Add(time.Duration(c.writeTimeout)))
 	u, isPublishing, err := c.conn.InitializeServer()
 	if err != nil {
 		return err
 	}
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				c.nconn.Close()
+				return
+			default:
+				cmd, err := c.conn.ReadCommand()
+				if cmd != nil {
+					fmt.Printf("RTMP CMD : %v\n", cmd.Name)
+				}
+				if err != nil {
+					fmt.Printf("RTMP ERR : %v\n", err)
+				}
+			}
+		}
+	}()
 
 	if !isPublishing {
 		return c.runRead(ctx, u)

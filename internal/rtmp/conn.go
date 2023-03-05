@@ -131,7 +131,7 @@ func (c *Conn) BytesSent() uint64 {
 	return c.bc.Writer.Count()
 }
 
-func (c *Conn) readCommand() (*message.MsgCommandAMF0, error) {
+func (c *Conn) ReadCommand() (*message.MsgCommandAMF0, error) {
 	for {
 		msg, err := c.mrw.Read()
 		if err != nil {
@@ -334,7 +334,7 @@ func (c *Conn) InitializeServer() (*url.URL, bool, error) {
 
 	c.mrw = message.NewReadWriter(c.bc, false)
 
-	cmd, err := c.readCommand()
+	cmd, err := c.ReadCommand()
 	if err != nil {
 		return nil, false, err
 	}
@@ -413,7 +413,7 @@ func (c *Conn) InitializeServer() (*url.URL, bool, error) {
 	}
 
 	for {
-		cmd, err := c.readCommand()
+		cmd, err := c.ReadCommand()
 		if err != nil {
 			return nil, false, err
 		}
