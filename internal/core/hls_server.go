@@ -301,7 +301,7 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 	}()
 
 	if fname == "" && !strings.HasSuffix(dir, "/") {
-		ctx.Writer.Header().Set("Location", "/"+dir+"/")
+		ctx.Writer.Header().Set("Location", "/"+dir+"/"+"?"+ctx.Request.URL.RawQuery)
 		ctx.Writer.WriteHeader(http.StatusMovedPermanently)
 		return
 	}
