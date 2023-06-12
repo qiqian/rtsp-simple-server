@@ -2,9 +2,7 @@ package core
 
 import (
 	"context"
-	"crypto/md5"
 	"crypto/tls"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -16,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"github.com/aler9/rtsp-simple-server/internal/conf"
 	"github.com/aler9/rtsp-simple-server/internal/logger"
@@ -318,21 +317,21 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 	// }
 	query := ctx.Request.URL.RawQuery
 
-	uuid := ""
+	new_uuid := ""
 	if strings.Contains(query, "uuid=") {
-		uuid = query[5:]
+		new_uuid = query[5:]
 	} else {
-		hash := md5.Sum([]byte(ctx.Request.RemoteAddr + "@" + dir + "?" + query))
-		uuid = hex.EncodeToString(hash[:])
+		// hash := md5.Sum([]byte(ctx.Request.RemoteAddr + "@" + dir + "?" + query))
+		new_uuid = uuid.New().String()
 	}
 	// uuid = dir
-	s.log(logger.Info, "%v request(%v) %v?%v\n", ctx.Request.RemoteAddr, uuid, pa, query)
+	s.log(logger.Info, "%v request(%v) %v?%v\n", ctx.Request.RemoteAddr, new_uuid, pa, query)
 
 	hreq := &hlsMuxerRequest{
 		path:  dir,
 		file:  fname,
 		query: query,
-		uuid:  uuid,
+		uuid:  new_uuid,
 		ctx:   ctx,
 		res:   make(chan *hlsMuxerResponse),
 	}
