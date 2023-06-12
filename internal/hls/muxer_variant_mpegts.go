@@ -18,7 +18,7 @@ func newMuxerVariantMPEGTS(
 	segmentMaxSize uint64,
 	videoTrack format.Format,
 	audioTrack format.Format,
-	query string,
+	uuid string,
 ) (*muxerVariantMPEGTS, error) {
 	var videoTrackH264 *format.H264
 	if videoTrack != nil {
@@ -42,7 +42,7 @@ func newMuxerVariantMPEGTS(
 
 	v := &muxerVariantMPEGTS{}
 
-	v.playlist = newMuxerVariantMPEGTSPlaylist(segmentCount, query)
+	v.playlist = newMuxerVariantMPEGTSPlaylist(segmentCount, uuid)
 
 	v.segmenter = newMuxerVariantMPEGTSSegmenter(
 		segmentDuration,

@@ -63,7 +63,7 @@ func newMuxerVariantFMP4(
 	segmentMaxSize uint64,
 	videoTrack format.Format,
 	audioTrack format.Format,
-	query string,
+	uuid string,
 ) *muxerVariantFMP4 {
 	v := &muxerVariantFMP4{
 		videoTrack: videoTrack,
@@ -75,7 +75,7 @@ func newMuxerVariantFMP4(
 		segmentCount,
 		videoTrack,
 		audioTrack,
-		query,
+		uuid,
 	)
 
 	v.segmenter = newMuxerVariantFMP4Segmenter(

@@ -316,7 +316,7 @@ func (m *hlsMuxer) runInner(innerCtx context.Context, innerReady chan struct{}) 
 		uint64(m.segmentMaxSize),
 		videoFormat,
 		audioFormat,
-		m.query,
+		m.uuid,
 	)
 	if err != nil {
 		return fmt.Errorf("muxer error: %v", err)

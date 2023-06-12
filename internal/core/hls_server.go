@@ -318,8 +318,13 @@ func (s *hlsServer) onRequest(ctx *gin.Context) {
 	// }
 	query := ctx.Request.URL.RawQuery
 
-	hash := md5.Sum([]byte(ctx.Request.RemoteAddr + "@" + dir + "?" + query))
-	uuid := hex.EncodeToString(hash[:])
+	uuid := ""
+	if strings.Contains(query, "uuid=") {
+		uuid = query[5:]
+	} else {
+		hash := md5.Sum([]byte(ctx.Request.RemoteAddr + "@" + dir + "?" + query))
+		uuid = hex.EncodeToString(hash[:])
+	}
 	// uuid = dir
 	s.log(logger.Info, "%v request(%v) %v?%v\n", ctx.Request.RemoteAddr, uuid, pa, query)
 

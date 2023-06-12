@@ -12,7 +12,7 @@ import (
 
 type muxerVariantMPEGTSPlaylist struct {
 	segmentCount int
-	query        string
+	uuid         string
 
 	mutex              sync.Mutex
 	cond               *sync.Cond
@@ -22,10 +22,10 @@ type muxerVariantMPEGTSPlaylist struct {
 	segmentDeleteCount int
 }
 
-func newMuxerVariantMPEGTSPlaylist(segmentCount int, query string) *muxerVariantMPEGTSPlaylist {
+func newMuxerVariantMPEGTSPlaylist(segmentCount int, uuid string) *muxerVariantMPEGTSPlaylist {
 	p := &muxerVariantMPEGTSPlaylist{
 		segmentCount:  segmentCount,
-		query:         query,
+		uuid:          uuid,
 		segmentByName: make(map[string]*muxerVariantMPEGTSSegment),
 	}
 	p.cond = sync.NewCond(&p.mutex)
@@ -81,7 +81,7 @@ func (p *muxerVariantMPEGTSPlaylist) playlist() io.Reader {
 	for _, s := range p.segments {
 		cnt += "#EXT-X-PROGRAM-DATE-TIME:" + s.startTime.Format("2006-01-02T15:04:05.999Z07:00") + "\n" +
 			"#EXTINF:" + strconv.FormatFloat(s.duration().Seconds(), 'f', -1, 64) + ",\n" +
-			s.name + ".ts?" + p.query + "\n"
+			s.name + ".ts?uuid=" + p.uuid + "\n"
 	}
 
 	return bytes.NewReader([]byte(cnt))

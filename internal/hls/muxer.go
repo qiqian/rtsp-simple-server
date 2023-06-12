@@ -30,7 +30,7 @@ func NewMuxer(
 	segmentMaxSize uint64,
 	videoTrack format.Format,
 	audioTrack format.Format,
-	query string,
+	uuid string,
 ) (*Muxer, error) {
 	m := &Muxer{}
 
@@ -43,7 +43,7 @@ func NewMuxer(
 			segmentMaxSize,
 			videoTrack,
 			audioTrack,
-			query,
+			uuid,
 		)
 		if err != nil {
 			return nil, err
@@ -58,7 +58,7 @@ func NewMuxer(
 			segmentMaxSize,
 			videoTrack,
 			audioTrack,
-			query,
+			uuid,
 		)
 
 	default: // MuxerVariantLowLatency
@@ -70,11 +70,11 @@ func NewMuxer(
 			segmentMaxSize,
 			videoTrack,
 			audioTrack,
-			query,
+			uuid,
 		)
 	}
 
-	m.primaryPlaylist = newMuxerPrimaryPlaylist(variant != MuxerVariantMPEGTS, videoTrack, audioTrack, query)
+	m.primaryPlaylist = newMuxerPrimaryPlaylist(variant != MuxerVariantMPEGTS, videoTrack, audioTrack, uuid)
 
 	return m, nil
 }
